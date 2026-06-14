@@ -564,6 +564,7 @@ message DEVICE_MAPID_INTO_MODEIDLE_INFO_RSP {
 
 message DEVICE_MOP_FLOOR_CLEAN_REQ {
   required uint32 ctrlValue = 1;
+  required uint32 cleanType = 2;
 }
 
 message DEVICE_MOP_FLOOR_CLEAN_RSP {

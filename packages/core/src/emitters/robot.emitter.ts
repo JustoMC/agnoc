@@ -139,10 +139,6 @@ export class Robot extends TypedEmitter<RobotEvents> {
       await this.sendRecv('DEVICE_AREA_CLEAN_REQ', 'DEVICE_AREA_CLEAN_RSP', {
         ctrlValue: CTRL_VALUE.START,
       });
-    } else if (this.device.mode?.value === DeviceMode.VALUE.MOP) {
-      await this.sendRecv('DEVICE_MOP_FLOOR_CLEAN_REQ', 'DEVICE_MOP_FLOOR_CLEAN_RSP', {
-        ctrlValue: CTRL_VALUE.START,
-      });
     } else if (this.device.mode?.value === DeviceMode.VALUE.SPOT && this.device.map?.currentSpot) {
       await this.sendRecv('DEVICE_MAPID_SET_NAVIGATION_REQ', 'DEVICE_MAPID_SET_NAVIGATION_RSP', {
         mapHeadId: this.device.map.id.value,
@@ -183,22 +179,30 @@ export class Robot extends TypedEmitter<RobotEvents> {
             })),
           },
         });
-      }
 
-      await this.sendRecv('DEVICE_AUTO_CLEAN_REQ', 'DEVICE_AUTO_CLEAN_RSP', {
-        ctrlValue: CTRL_VALUE.START,
-        cleanType: 2,
-      });
+        await this.sendRecv('DEVICE_MAPID_SELECT_MAP_PLAN_REQ', 'DEVICE_MAPID_SELECT_MAP_PLAN_RSP', {
+          mapHeadId: id.value,
+          planId: 2,
+          mode: 1,
+        });
+      }
+      if (this.device.hasMopAttached) {
+        await this.sendRecv('DEVICE_MOP_FLOOR_CLEAN_REQ', 'DEVICE_MOP_FLOOR_CLEAN_RSP', {
+          ctrlValue: CTRL_VALUE.START,
+          cleanType: 2,
+        });
+      } else {
+        await this.sendRecv('DEVICE_AUTO_CLEAN_REQ', 'DEVICE_AUTO_CLEAN_RSP', {
+          ctrlValue: CTRL_VALUE.START,
+          cleanType: 2,
+        });
+      }
     }
   }
 
   async pause(): Promise<void> {
     if (this.device.mode?.value === DeviceMode.VALUE.ZONE) {
       await this.sendRecv('DEVICE_AREA_CLEAN_REQ', 'DEVICE_AREA_CLEAN_RSP', {
-        ctrlValue: CTRL_VALUE.PAUSE,
-      });
-    } else if (this.device.mode?.value === DeviceMode.VALUE.MOP) {
-      await this.sendRecv('DEVICE_MOP_FLOOR_CLEAN_REQ', 'DEVICE_MOP_FLOOR_CLEAN_RSP', {
         ctrlValue: CTRL_VALUE.PAUSE,
       });
     } else if (this.device.mode?.value === DeviceMode.VALUE.SPOT && this.device.map?.currentSpot) {
@@ -210,17 +214,25 @@ export class Robot extends TypedEmitter<RobotEvents> {
         ctrlValue: CTRL_VALUE.PAUSE,
       });
     } else {
-      await this.sendRecv('DEVICE_AUTO_CLEAN_REQ', 'DEVICE_AUTO_CLEAN_RSP', {
-        ctrlValue: CTRL_VALUE.PAUSE,
-        cleanType: 2,
-      });
+      if (this.device.hasMopAttached) {
+        await this.sendRecv('DEVICE_MOP_FLOOR_CLEAN_REQ', 'DEVICE_MOP_FLOOR_CLEAN_RSP', {
+          ctrlValue: CTRL_VALUE.PAUSE,
+          cleanType: 2,
+        });
+      } else {
+        await this.sendRecv('DEVICE_AUTO_CLEAN_REQ', 'DEVICE_AUTO_CLEAN_RSP', {
+          ctrlValue: CTRL_VALUE.PAUSE,
+          cleanType: 2,
+        });
+      }
     }
   }
 
   async stop(): Promise<void> {
-    if (this.device.mode?.value === DeviceMode.VALUE.MOP) {
+    if (this.device.hasMopAttached) {
       await this.sendRecv('DEVICE_MOP_FLOOR_CLEAN_REQ', 'DEVICE_MOP_FLOOR_CLEAN_RSP', {
         ctrlValue: CTRL_VALUE.STOP,
+        cleanType: 2,
       });
     } else {
       await this.sendRecv('DEVICE_AUTO_CLEAN_REQ', 'DEVICE_AUTO_CLEAN_RSP', {
@@ -300,6 +312,10 @@ export class Robot extends TypedEmitter<RobotEvents> {
     } else if (mode.value === DeviceMode.VALUE.MOP) {
       await this.sendRecv('DEVICE_MAPID_INTO_MODEIDLE_INFO_REQ', 'DEVICE_MAPID_INTO_MODEIDLE_INFO_RSP', {
         mode: 7,
+      });
+      await this.sendRecv('DEVICE_MOP_FLOOR_CLEAN_REQ', 'DEVICE_MOP_FLOOR_CLEAN_RSP', {
+        ctrlValue: CTRL_VALUE.STOP,
+        cleanType: 2,
       });
     } else {
       throw new ArgumentInvalidException('Unknown device mode');
@@ -727,10 +743,17 @@ export class Robot extends TypedEmitter<RobotEvents> {
 
     await this.sendRecv('DEVICE_MAPID_GET_GLOBAL_INFO_REQ', 'DEVICE_MAPID_GET_GLOBAL_INFO_RSP', { mask: 0x78ff });
 
-    await this.sendRecv('DEVICE_AUTO_CLEAN_REQ', 'DEVICE_AUTO_CLEAN_RSP', {
-      ctrlValue: CTRL_VALUE.START,
-      cleanType: 2,
-    });
+    if (this.device.hasMopAttached) {
+      await this.sendRecv('DEVICE_MOP_FLOOR_CLEAN_REQ', 'DEVICE_MOP_FLOOR_CLEAN_RSP', {
+        ctrlValue: CTRL_VALUE.START,
+        cleanType: 2,
+      });
+    } else {
+      await this.sendRecv('DEVICE_AUTO_CLEAN_REQ', 'DEVICE_AUTO_CLEAN_RSP', {
+        ctrlValue: CTRL_VALUE.START,
+        cleanType: 2,
+      });
+    }
   }
 
   async resetMap(): Promise<void> {
